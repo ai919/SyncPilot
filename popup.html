@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 330px;
+      padding: 16px;
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      box-sizing: border-box;
+      user-select: none;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .badge {
+      font-size: 11px;
+      color: #4ade80;
+      font-weight: normal;
+    }
+    .lang-toggle {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #94a3b8;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .lang-toggle:hover {
+      border-color: #38bdf8;
+      color: #38bdf8;
+    }
+    .folder-box {
+      padding: 10px 12px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      font-size: 12px;
+      color: #e2e8f0;
+      word-break: break-all;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .folder-name {
+      color: #38bdf8;
+      font-family: monospace;
+    }
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    button.btn {
+      width: 100%;
+      padding: 9px 0;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: #2563eb;
+      color: #ffffff;
+    }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary {
+      background: #1e293b;
+      color: #cbd5e1;
+      border: 1px solid #334155;
+    }
+    .btn-secondary:hover {
+      background: #334155;
+      color: #ffffff;
+      border-color: #475569;
+    }
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 16px 0 8px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .clear-btn {
+      background: none;
+      border: none;
+      color: #ef4444;
+      font-size: 11px;
+      cursor: pointer;
+      padding: 0;
+    }
+    .clear-btn:hover { text-decoration: underline; }
+    .history-list {
+      max-height: 140px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-right: 2px;
+    }
+    .history-item {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 4px;
+      padding: 6px 8px;
+      font-size: 11px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .history-path {
+      color: #38bdf8;
+      font-family: monospace;
+      max-width: 190px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .history-time { color: #64748b; font-size: 10px; }
+    .empty-state {
+      color: #475569;
+      font-size: 11px;
+      text-align: center;
+      padding: 10px 0;
+    }
+    #status {
+      font-size: 11px;
+      text-align: center;
+      color: #4ade80;
+      min-height: 14px;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="brand">
+      <svg width="18" height="18" viewBox="0 0 128 128">
+        <rect width="128" height="128" rx="28" fill="#1e293b"/>
+        <path d="M68 20 L40 68 L62 68 L58 108 L90 56 L68 56 Z" fill="#38bdf8"/>
+      </svg>
+      <span id="txtTitle">SyncPilot 本地直存</span>
+    </div>
+    <div class="header-right">
+      <span class="badge" id="txtBadge">纯前端模式</span>
+      <button type="button" class="lang-toggle" id="langToggleBtn">EN</button>
+    </div>
+  </div>
+
+  <div class="folder-box">
+    <span>📁</span>
+    <span id="folderLabel">未绑定目标文件夹</span>
+  </div>
+
+  <div class="btn-group">
+    <button type="button" class="btn btn-primary" id="pickBtn">📂 选择并授权工作区目录</button>
+    <button type="button" class="btn btn-secondary" id="copyPromptBtn">📋 复制 AI 输出规范提示词</button>
+  </div>
+
+  <div id="status"></div>
+
+  <div class="section-title">
+    <span id="txtHistoryTitle">最近文件同步记录</span>
+    <button type="button" class="clear-btn" id="clearHistoryBtn">清空记录</button>
+  </div>
+  <div class="history-list" id="historyList">
+    <div class="empty-state" id="txtEmpty">暂无同步记录</div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

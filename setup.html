@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>SyncPilot - 目录授权 / Workspace Authorization</title>
+  <style>
+    body {
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 32px;
+      width: 440px;
+      box-shadow: 0 16px 32px rgba(0,0,0,0.5);
+      text-align: center;
+    }
+    h2 { margin: 0 0 12px; color: #38bdf8; font-size: 20px; }
+    p { font-size: 13px; color: #94a3b8; line-height: 1.6; margin-bottom: 24px; }
+    .folder-display {
+      background: #0f172a;
+      border: 1px solid #475569;
+      border-radius: 8px;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 13px;
+      color: #38bdf8;
+      margin-bottom: 20px;
+      word-break: break-all;
+    }
+    button {
+      width: 100%;
+      padding: 12px 0;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #1d4ed8; }
+    #msg {
+      margin-top: 14px;
+      font-size: 13px;
+      min-height: 20px;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2 id="tTitle">⚡ SyncPilot 工作区目录授权</h2>
+    <p id="tDesc">由于系统安全策略，请在当前独立页面选择本地项目文件夹，并允许浏览器的写入权限。</p>
+    <div class="folder-display" id="folderDisplay">📁 未绑定目标文件夹</div>
+    <button id="authBtn">📂 选取本地文件夹并授权</button>
+    <div id="msg"></div>
+  </div>
+
+  <script src="setup.js"></script>
+</body>
+</html>
