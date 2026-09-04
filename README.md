@@ -21,6 +21,18 @@
 
 ---
 
+### 📸 界面预览
+
+<div align="center">
+  <img src="images/01.png" alt="SyncPilot Popup UI" width="340" />
+  <p><em>控制面板：支持工作区授权、中英无缝切换、Prompt 规范复制及最近同步历史</em></p>
+  <br />
+  <img src="images/02.png" alt="Gemini CodeBlock Direct Sync" width="700" />
+  <p><em>Gemini 页面注入：代码块右上角原生风格直传按钮，点击瞬间落盘</em></p>
+</div>
+
+---
+
 ### ✨ 核心特性
 
 - ⚡ **无缝注入**：智能捕获 Gemini 页面中输出的代码块并在右上角注入原生风格的直存按钮。
@@ -37,7 +49,7 @@
 #### 1. 安装扩展
 1. 下载或克隆本仓库代码到本地：
 ```bash
-git clone [https://github.com/your-username/SyncPilot.git](https://github.com/your-username/SyncPilot.git)
+git clone [https://github.com/ai919/SyncPilot.git](https://github.com/ai919/SyncPilot.git)
 ```
 2. 打开 Chrome / Edge 浏览器，访问扩展管理页面：`chrome://extensions/`。
 3. 开启右上角的 **“开发者模式” (Developer mode)**。
@@ -68,6 +80,9 @@ git clone [https://github.com/your-username/SyncPilot.git](https://github.com/yo
 
 ```text
 syncpilot-extension/
+├── images/             # 预览截图资源
+│   ├── 01.png
+│   └── 02.png
 ├── manifest.json       # Chrome 扩展 Manifest V3 配置
 ├── popup.html          # 控制面板界面
 ├── popup.js            # 控制面板逻辑（语言切换、历史查看、规范复制）
@@ -94,6 +109,18 @@ When collaborating deeply with Large Language Models like Google Gemini on softw
 
 ---
 
+### 📸 Screenshots
+
+<div align="center">
+  <img src="images/01.png" alt="SyncPilot Popup UI" width="340" />
+  <p><em>Popup Dashboard: Workspace binding, instant EN/中 toggle, spec copying, and timestamped history</em></p>
+  <br />
+  <img src="images/02.png" alt="Gemini CodeBlock Direct Sync" width="700" />
+  <p><em>In-page Injection: Seamless button attached directly to Gemini codeblocks for 1-click disk writes</em></p>
+</div>
+
+---
+
 ### ✨ Features
 
 - ⚡ **Seamless Injection**: Smartly scans Gemini code outputs and attaches native-style direct sync buttons.
@@ -110,7 +137,7 @@ When collaborating deeply with Large Language Models like Google Gemini on softw
 #### 1. Installation
 1. Clone or download this repository:
 ```bash
-git clone [https://github.com/your-username/SyncPilot.git](https://github.com/your-username/SyncPilot.git)
+git clone [https://github.com/ai919/SyncPilot.git](https://github.com/ai919/SyncPilot.git)
 ```
 2. Open Chrome or Edge and navigate to `chrome://extensions/`.
 3. Enable **Developer mode** in the upper-right corner.
@@ -141,6 +168,9 @@ As Gemini generates code, simply click the **`⚡ Sync`** button on any block or
 
 ```text
 syncpilot-extension/
+├── images/             # Preview screenshots
+│   ├── 01.png
+│   └── 02.png
 ├── manifest.json       # Manifest V3 configuration
 ├── popup.html          # Control panel popup UI
 ├── popup.js            # Popup logic (language toggle, history, prompt copy)
