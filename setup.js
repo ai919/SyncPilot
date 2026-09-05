@@ -47,6 +47,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     btn.innerText = '📂 Select Local Folder & Authorize';
   }
 
+  if (typeof window.showDirectoryPicker !== 'function') {
+    btn.disabled = true;
+    msg.style.color = '#ef4444';
+    msg.innerText = isEn
+      ? '❌ This browser does not support local workspace authorization. Please use a current version of Chrome or Edge.'
+      : '❌ 当前浏览器不支持本地工作区授权，请使用最新版 Chrome 或 Edge。';
+    return;
+  }
+
   const currentHandle = await getDirHandle();
   if (currentHandle) {
     display.innerText = (isEn ? '📁 Currently Bound: ' : '📁 当前已绑定: ') + currentHandle.name;

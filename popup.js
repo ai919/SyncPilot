@@ -7,10 +7,18 @@ const I18N = {
     badge: '纯前端模式',
     noFolder: '未绑定目标文件夹',
     boundPrefix: '已绑定: ',
+    expiredPrefix: '授权已失效: ',
+    workspaceUnavailable: '工作区状态暂时不可用',
+    workspaceNeedsAuth: '请重新绑定目录后继续同步',
     btnPick: '📂 选择并授权工作区目录',
+    btnRebind: '📂 重新绑定工作区目录',
     btnCopyPrompt: '📋 复制 AI 输出规范提示词',
     btnPromptCopied: '✅ 规范提示词已复制！',
+    copyFailed: '❌ 复制失败',
     historyTitle: '最近文件同步记录',
+    historyFiles: '{count} 个文件',
+    historyWritten: '已写入',
+    historyFailed: '失败',
     clearHistory: '清空记录',
     emptyHistory: '暂无同步记录',
     langNext: 'EN',
@@ -25,10 +33,18 @@ const I18N = {
     badge: 'Client-Only',
     noFolder: 'No workspace linked',
     boundPrefix: 'Bound: ',
+    expiredPrefix: 'Authorization expired: ',
+    workspaceUnavailable: 'Workspace status is temporarily unavailable',
+    workspaceNeedsAuth: 'Rebind the workspace before syncing',
     btnPick: '📂 Select & Authorize Workspace',
+    btnRebind: '📂 Rebind Workspace',
     btnCopyPrompt: '📋 Copy AI Spec Prompt',
     btnPromptCopied: '✅ Spec Prompt Copied!',
+    copyFailed: '❌ Copy Failed',
     historyTitle: 'Recent Sync History',
+    historyFiles: '{count} file(s)',
+    historyWritten: 'Written',
+    historyFailed: 'Failed',
     clearHistory: 'Clear Records',
     emptyHistory: 'No sync records yet',
     langNext: '中',
@@ -42,23 +58,46 @@ const I18N = {
 
 let currentLang = 'zh';
 let currentBoundDirName = null;
+let workspaceState = 'UNKNOWN';
 
 function renderUI() {
   const dict = I18N[currentLang];
   document.getElementById('txtTitle').innerText = dict.title;
   document.getElementById('txtBadge').innerText = dict.badge;
   document.getElementById('langToggleBtn').innerText = dict.langNext;
-  document.getElementById('pickBtn').innerText = dict.btnPick;
+  document.getElementById('pickBtn').innerText = workspaceState === 'NEED_AUTH' ? dict.btnRebind : dict.btnPick;
   document.getElementById('copyPromptBtn').innerText = dict.btnCopyPrompt;
   document.getElementById('txtHistoryTitle').innerText = dict.historyTitle;
   document.getElementById('clearHistoryBtn').innerText = dict.clearHistory;
 
   const folderLabel = document.getElementById('folderLabel');
-  if (currentBoundDirName) {
-    folderLabel.innerHTML = `${dict.boundPrefix}<strong class="folder-name">${currentBoundDirName}</strong>`;
+  if (workspaceState === 'GRANTED' && currentBoundDirName) {
+    folderLabel.innerText = dict.boundPrefix + currentBoundDirName;
+  } else if (workspaceState === 'NEED_AUTH' && currentBoundDirName) {
+    folderLabel.innerText = dict.expiredPrefix + currentBoundDirName;
   } else {
     folderLabel.innerText = dict.noFolder;
   }
+
+  const statusEl = document.getElementById('status');
+  statusEl.innerText = workspaceState === 'NEED_AUTH'
+    ? `❌ ${dict.workspaceNeedsAuth}`
+    : workspaceState === 'UNKNOWN'
+      ? `❌ ${dict.workspaceUnavailable}`
+      : '';
+}
+
+function refreshWorkspaceStatus() {
+  chrome.runtime.sendMessage({ action: 'GET_WORKSPACE_STATUS' }, (res) => {
+    if (chrome.runtime.lastError || !res || !res.success) {
+      workspaceState = 'UNKNOWN';
+      currentBoundDirName = null;
+    } else {
+      workspaceState = res.state;
+      currentBoundDirName = res.name || null;
+    }
+    renderUI();
+  });
 }
 
 function renderHistory() {
@@ -66,19 +105,51 @@ function renderHistory() {
   try {
     chrome.storage.local.get(['syncHistory'], (res) => {
       const history = (res && res.syncHistory) || [];
+      listEl.replaceChildren();
+
       if (history.length === 0) {
-        listEl.innerHTML = `<div class="empty-state">${I18N[currentLang].emptyHistory}</div>`;
+        const emptyState = document.createElement('div');
+        emptyState.className = 'empty-state';
+        emptyState.textContent = I18N[currentLang].emptyHistory;
+        listEl.appendChild(emptyState);
         return;
       }
-      listEl.innerHTML = history.map(item => `
-        <div class="history-item">
-          <span class="history-path" title="${item.path}">${item.path}</span>
-          <span class="history-time">${item.time}</span>
-        </div>
-      `).join('');
+
+      history.forEach(item => {
+        const historyItem = document.createElement('div');
+        historyItem.className = 'history-item';
+
+        const writtenPaths = Array.isArray(item.writtenPaths)
+          ? item.writtenPaths
+          : item.path ? [item.path] : [];
+        const failedFiles = Array.isArray(item.failedFiles) ? item.failedFiles : [];
+        const label = writtenPaths.length === 1
+          ? writtenPaths[0]
+          : I18N[currentLang].historyFiles.replace('{count}', writtenPaths.length);
+        const details = [
+          `${I18N[currentLang].historyWritten}:\n${writtenPaths.join('\n') || '-'}`,
+          `${I18N[currentLang].historyFailed}:\n${failedFiles.map(file => file.path).join('\n') || '-'}`
+        ].join('\n\n');
+
+        if (failedFiles.length > 0) {
+          historyItem.classList.add('history-item-failed');
+        }
+
+        const path = document.createElement('span');
+        path.className = 'history-path';
+        path.title = details;
+        path.textContent = label;
+
+        const time = document.createElement('span');
+        time.className = 'history-time';
+        time.textContent = item.time;
+
+        historyItem.append(path, time);
+        listEl.appendChild(historyItem);
+      });
     });
   } catch (e) {
-    listEl.innerHTML = `<div class="empty-state">${I18N[currentLang].emptyHistory}</div>`;
+    listEl.textContent = I18N[currentLang].emptyHistory;
   }
 }
 
@@ -142,7 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
         copyBtn.style.color = '#cbd5e1';
       }, 2000);
     } catch (err) {
-      statusEl.innerText = '❌ Copy Failed';
+      statusEl.innerText = I18N[currentLang].copyFailed;
     }
   };
 
@@ -172,10 +243,5 @@ document.addEventListener('DOMContentLoaded', () => {
     renderHistory();
   }
 
-  getDirHandle().then((handle) => {
-    if (handle && handle.name) {
-      currentBoundDirName = handle.name;
-      renderUI();
-    }
-  });
+  refreshWorkspaceStatus();
 });

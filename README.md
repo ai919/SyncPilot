@@ -1,7 +1,7 @@
 # SyncPilot ⚡
 
-> **Native Direct Sync for Gemini Code Blocks to Local Workspace without Any Background Daemon.**  
-> **无需任何本地后台服务，直接将 Gemini 页面生成的代码块毫秒级落盘写入本地工作区。**
+> **Native Direct Sync for AI Code Blocks to Local Workspace without Any Background Daemon.**  
+> **无需任何本地后台服务，直接将 AI 页面生成的代码块毫秒级落盘写入本地工作区。**
 
 [English](#english) | [简体中文](#简体中文)
 
@@ -10,7 +10,7 @@
 ## 简体中文
 
 ### 💡 为什么需要 SyncPilot？
-在与大语言模型（如 Google Gemini）进行深度编程协作时，开发者往往需要频繁复制生成的代码文件并手动创建、粘贴到本地 IDE 项目路径中。这一过程割裂、繁琐且极易出错。
+在与大语言模型（如 Gemini、ChatGPT、Claude、DeepSeek、Kimi、Qwen、豆包和 Grok）进行深度编程协作时，开发者往往需要频繁复制生成的代码文件并手动创建、粘贴到本地 IDE 项目路径中。这一过程割裂、繁琐且极易出错。
 
 **SyncPilot** 彻底打破了这一桎梏：
 - **纯前端架构（Zero-Daemon）**：完全基于现代浏览器的 **File System Access API**，无需启动任何 Node.js、Python 后台常驻脚本或命令行黑窗口。
@@ -39,7 +39,7 @@
 - 📦 **本轮批量写入**：屏幕右下角自动检测本轮会话中的全部代码文件，一键打包落盘。
 - 🧼 **纯净代码提取**：自动过滤 UI 注入元素与元数据，落盘代码与实际所需 1:1 完全一致。
 - 📁 **安全文件夹授权**：采用独立的授权标签页设计，彻底规避 Chrome Popup 失焦销毁导致的文件选择器中断问题。
-- 🕒 **同步历史看板**：Popup 弹窗实时记录最近 30 条文件的落盘状态与精确写入时间戳。
+- 🕒 **同步历史看板**：Popup 弹窗实时记录最近 30 个同步批次的成功、失败状态与精确写入时间戳。
 - 🌐 **双语支持 (i18n)**：Popup 顶部可快速切换 `中 / EN`，Prompt 规范模板同步自适应。
 
 ---
@@ -98,7 +98,7 @@ syncpilot-extension/
 ## English
 
 ### 💡 Why SyncPilot?
-When collaborating deeply with Large Language Models like Google Gemini on software development, developers frequently copy generated code snippets and manually create and paste files into their IDE workspaces. This workflow is fragmented, tedious, and prone to mistakes.
+When collaborating deeply with LLMs such as Gemini, ChatGPT, Claude, DeepSeek, Kimi, Qwen, Doubao, and Grok on software development, developers frequently copy generated code snippets and manually create and paste files into their IDE workspaces. This workflow is fragmented, tedious, and prone to mistakes.
 
 **SyncPilot** changes this completely:
 - **Zero-Daemon Architecture**: Fully built on top of the web-native **File System Access API**—no Node.js, Python background scripts, or terminal windows required.
@@ -127,7 +127,7 @@ When collaborating deeply with Large Language Models like Google Gemini on softw
 - 📦 **Batch Sync Capsule**: Automatically counts files generated in the latest AI turn and writes them all with a single click.
 - 🧼 **Pristine Code Pipeline**: Deep node-cloning extraction ensures no injected UI text or path markers pollute the final code.
 - 📁 **Dedicated Auth Tab**: Solves Chrome's popup-blur termination bug during directory picker dialogs via a decoupled setup page.
-- 🕒 **Recent Sync Logs**: Popup drawer displays the last 30 synchronized files with precise timestamp records.
+- 🕒 **Recent Sync Logs**: Popup drawer displays the last 30 sync batches with success/failure status and precise timestamps.
 - 🌐 **Full i18n**: Quick language switch between English and Chinese across all UI elements and AI prompts.
 
 ---
