@@ -15,7 +15,7 @@
       btnDirectSaving: '落盘中...',
       errNoHandle: '请先授权',
       errWriteFailed: '写入失败',
-      errInvalidInput: '文件路径无效',
+      errInvalidInput: '路径必须是工作区内的相对路径，例如 games/one-line/js/engine.mjs',
       errTooManyFiles: '文件数量过多',
       reauthorize: '重新绑定目录',
       refreshPage: '刷新页面',
@@ -27,6 +27,7 @@
       newContent: '即将写入',
       truncatedDiff: '内容超过 200KB，未加载完整差异预览。',
       errPartialWrite: '{written} 个文件已写入，{failed} 个失败',
+      errTimeout: '写入耗时较长，请稍后重试',
       historyWritten: '已写入',
       historyFailed: '失败',
       reloadTip: '检测到插件重新加载，请按 F5 刷新当前网页以连接最新插件！',
@@ -44,7 +45,7 @@
       btnDirectSaving: 'Saving...',
       errNoHandle: 'Authorize first',
       errWriteFailed: 'Write failed',
-      errInvalidInput: 'Invalid file path',
+      errInvalidInput: 'Use a workspace-relative path, e.g. games/one-line/js/engine.mjs',
       errTooManyFiles: 'Too many files',
       reauthorize: 'Rebind workspace',
       refreshPage: 'Refresh page',
@@ -56,6 +57,7 @@
       newContent: 'New content',
       truncatedDiff: 'The content exceeds 200KB, so a full diff preview is unavailable.',
       errPartialWrite: '{written} file(s) written, {failed} failed',
+      errTimeout: 'Write is taking too long; please retry',
       historyWritten: 'Written',
       historyFailed: 'Failed',
       reloadTip: 'Extension updated. Please press F5 to refresh page!',
@@ -112,11 +114,16 @@
   }
 
   function openWorkspaceSetup() {
+    // A reauthorization attempt invalidates the old failure state. The
+    // workspace may be valid again when setup.html closes, so allow retrying
+    // without requiring another page refresh.
+    batchFailure = null;
     chrome.runtime.sendMessage({ action: 'OPEN_WORKSPACE_SETUP' });
+    if (batchBar) updateBatchBarState();
   }
 
   function isAuthorizationError(error) {
-    return error === 'NO_HANDLE' || error === 'NEED_AUTH' || error === 'TIMEOUT';
+    return error === 'NO_HANDLE' || error === 'NEED_AUTH';
   }
 
   function isExtensionUnavailableError(error) {
@@ -355,7 +362,7 @@
         batchFailure = { signature, error: 'TIMEOUT' };
         updateBatchBarState();
       }
-    }, 8000);
+    }, 30000);
 
     chrome.runtime.sendMessage({ action: 'WRITE_FILES', files }, (res) => {
       if (timedOut) return;
@@ -425,12 +432,14 @@
           ? `❌ ${dict.reauthorize}`
           : needsRefresh
             ? `❌ ${dict.refreshPage}`
+          : batchFailure.error === 'TIMEOUT'
+            ? `❌ ${dict.errTimeout}`
           : batchFailure.error === 'PARTIAL_WRITE'
             ? `❌ ${formatPartialWrite(dict, batchFailure.writtenCount, batchFailure.failedCount)}`
             : `❌ ${getWriteErrorLabel(dict, batchFailure.error)}`;
         btn.style.background = '#dc2626';
-        btn.title = batchFailure.error === 'PARTIAL_WRITE'
-          ? `${dict.historyWritten}:\n${batchFailure.writtenPaths.join('\n')}\n\n${dict.historyFailed}:\n${batchFailure.failedFiles.map(file => file.path).join('\n')}`
+        btn.title = batchFailure.failedFiles?.length
+          ? `${dict.historyWritten}:\n${batchFailure.writtenPaths?.join('\n') || '-'}\n\n${dict.historyFailed}:\n${batchFailure.failedFiles.map(file => `${file.path}${file.error ? ` (${file.error})` : ''}${file.message ? `: ${file.message}` : ''}`).join('\n')}`
           : '';
         btn.onclick = needsAuthorization
           ? openWorkspaceSetup
@@ -549,7 +558,7 @@
             btn.style.background = '#dc2626';
             btn.dataset.syncPilotNeedsAuth = 'true';
           }
-        }, 8000);
+        }, 15000);
 
         chrome.runtime.sendMessage({
           action: 'WRITE_FILES',
@@ -576,6 +585,11 @@
             const errLabel = needsAuthorization ? dict.reauthorize : getWriteErrorLabel(dict, res && res.error);
             setButtonText(btn, '❌', errLabel);
             btn.style.background = '#dc2626';
+            if (res && Array.isArray(res.failedFiles) && res.failedFiles.length > 0) {
+              btn.title = res.failedFiles.map(file =>
+                `${file.path}${file.error ? ` (${file.error})` : ''}${file.message ? `: ${file.message}` : ''}`
+              ).join('\n');
+            }
 
             if (needsAuthorization) {
               btn.disabled = false;

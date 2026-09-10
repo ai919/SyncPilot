@@ -32,8 +32,8 @@ async function getDirHandle() {
   return new Promise((resolve) => {
     const tx = db.transaction(STORE_NAME, 'readonly');
     const req = tx.objectStore(STORE_NAME).get('workdir');
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => resolve(null);
+    req.onsuccess = () => { db.close(); resolve(req.result); };
+    req.onerror = () => { db.close(); resolve(null); };
   });
 }
 
@@ -94,9 +94,8 @@ function validateRelativePath(relativePath) {
 
 async function writeFileContent(fileHandle, content) {
   let writable = null;
-
   try {
-    writable = await fileHandle.createWritable({ keepExistingData: false });
+    writable = await fileHandle.createWritable();
     await writable.write(content);
     await writable.close();
   } catch (err) {
@@ -107,24 +106,58 @@ async function writeFileContent(fileHandle, content) {
   }
 }
 
-async function writeContentToDisk(rootHandle, relativePath, content) {
+function isTransientWriteError(err) {
+  return ['InvalidStateError', 'NoModificationAllowedError', 'OperationError', 'AbortError'].includes(err?.name);
+}
+
+async function writeContentToDisk(relativePath, content) {
   const parts = validateRelativePath(relativePath);
   const fileName = parts.pop();
-  let currentDir = rootHandle;
+  let lastError;
 
-  for (const dirName of parts) {
-    currentDir = await currentDir.getDirectoryHandle(dirName, { create: true });
+  // Reacquire handles for each retry. A FileSystemFileHandle can become stale
+  // after an external editor replaces the file or a previous writable closes.
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      const freshRootHandle = await getDirHandle();
+      if (!freshRootHandle) {
+        const missingHandleError = new DOMException('Workspace handle is unavailable', 'NotAllowedError');
+        throw missingHandleError;
+      }
+      let currentDir = freshRootHandle;
+      for (const dirName of parts) {
+        currentDir = await currentDir.getDirectoryHandle(dirName, { create: true });
+      }
+
+      try {
+        const fileHandle = await currentDir.getFileHandle(fileName, { create: true });
+        await writeFileContent(fileHandle, content);
+        return;
+      } catch (err) {
+        // If direct overwrite fails with InvalidStateError or transient error,
+        // it means Chromium's cached handle state or Windows swap-rename conflict
+        // occurred on the existing file. Remove the old entry first, then recreate
+        // a clean file to allow atomic swap commit without collision.
+        if (isTransientWriteError(err) || err?.name === 'InvalidStateError') {
+          try {
+            await currentDir.removeEntry(fileName);
+          } catch (_) {
+            // Ignore if file couldn't be removed or didn't exist
+          }
+          const freshFileHandle = await currentDir.getFileHandle(fileName, { create: true });
+          await writeFileContent(freshFileHandle, content);
+          return;
+        }
+        throw err;
+      }
+    } catch (err) {
+      lastError = err;
+      if (!isTransientWriteError(err) || attempt === 4) throw err;
+      await new Promise(resolve => setTimeout(resolve, 200 * (2 ** attempt)));
+    }
   }
 
-  // 安全写入：解决 Windows 静态服务器可能存在的文件句柄短暂独占
-  const fileHandle = await currentDir.getFileHandle(fileName, { create: true });
-  
-  try {
-    await writeFileContent(fileHandle, content);
-  } catch (err) {
-    await new Promise(r => setTimeout(r, 100));
-    await writeFileContent(fileHandle, content);
-  }
+  throw lastError;
 }
 
 async function getFilePreview(rootHandle, relativePath, content) {
@@ -185,26 +218,42 @@ async function writeFiles(files) {
     return { success: false, error: workspaceStatus.state };
   }
 
-  const rootHandle = await getDirHandle();
   const writtenPaths = [];
   const failedFiles = [];
 
   for (const file of files) {
     try {
-      await writeContentToDisk(rootHandle, file.path, file.content);
+      await writeContentToDisk(file.path, file.content);
       writtenPaths.push(file.path);
     } catch (err) {
-      failedFiles.push({ path: file.path, error: err.name || 'WRITE_ERROR' });
+      const error = err?.name || 'WRITE_ERROR';
+      failedFiles.push({
+        path: file.path,
+        error,
+        message: typeof err?.message === 'string' ? err.message : ''
+      });
     }
   }
 
   await recordSyncHistory(writtenPaths, failedFiles);
+  const permissionFailure = failedFiles.length > 0 &&
+    failedFiles.every(file => file.error === 'NotAllowedError' || file.error === 'SecurityError');
+  // When every file fails with InvalidStateError the workspace handle has
+  // become permanently stale (Chrome FSAA internal state mismatch). Re-
+  // authorizing the same directory issues a fresh handle and breaks the cycle.
+  const staleHandle = failedFiles.length > 0 &&
+    writtenPaths.length === 0 &&
+    failedFiles.every(file => file.error === 'InvalidStateError');
   return {
     success: failedFiles.length === 0,
     count: writtenPaths.length,
     writtenPaths,
     failedFiles,
-    error: failedFiles.length > 0 ? (writtenPaths.length > 0 ? 'PARTIAL_WRITE' : 'WRITE_ERROR') : null
+    error: failedFiles.length > 0
+      ? (permissionFailure || staleHandle)
+        ? 'NEED_AUTH'
+        : (writtenPaths.length > 0 ? 'PARTIAL_WRITE' : 'WRITE_ERROR')
+      : null
   };
 }
 
@@ -215,6 +264,9 @@ async function previewFiles(files) {
   }
 
   const rootHandle = await getDirHandle();
+  if (!rootHandle) {
+    return { success: false, error: 'NEED_AUTH' };
+  }
   return { success: true, files: await Promise.all(files.map(file => getFilePreview(rootHandle, file.path, file.content))) };
 }
 

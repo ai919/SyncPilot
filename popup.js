@@ -128,7 +128,11 @@ function renderHistory() {
           : I18N[currentLang].historyFiles.replace('{count}', writtenPaths.length);
         const details = [
           `${I18N[currentLang].historyWritten}:\n${writtenPaths.join('\n') || '-'}`,
-          `${I18N[currentLang].historyFailed}:\n${failedFiles.map(file => file.path).join('\n') || '-'}`
+          `${I18N[currentLang].historyFailed}:\n${failedFiles.map(file => {
+            const reason = file && file.error ? ` (${file.error})` : '';
+            const message = file && file.message ? `: ${file.message}` : '';
+            return `${file.path}${reason}${message}`;
+          }).join('\n') || '-'}`
         ].join('\n\n');
 
         if (failedFiles.length > 0) {
